@@ -31,6 +31,22 @@ from PIL import Image, ImageDraw, ImageFont
 BOOKS_DIR = Path("generated_books")
 BOOKS_DIR.mkdir(exist_ok=True)
 
+LANGUAGES = [
+    "English", "Arabic", "French", "Spanish", "German",
+    "Italian", "Portuguese", "Chinese", "Japanese", "Russian"
+]
+
+STYLES = [
+    "Academic", "Simple", "Professional", "Creative",
+    "Story-like", "Technical", "Persuasive", "Journalistic"
+]
+
+TEMPLATES = [
+    "Standard Book", "Novel", "Textbook", "Poetry Collection",
+    "Self-Help", "Biography", "Business", "Children's Book",
+    "Thriller", "Sci-Fi"
+]
+
 # Page Config - White Minimal Design
 st.set_page_config(
     page_title="OMNIBOOK AI",
@@ -91,6 +107,7 @@ class BookConfig:
     pages: int = 250
     chapters: int = 12
     writing_style: str = "Professional"
+    template: str = "Standard Book"
     author_name: str = "Author"
 
 @dataclass
@@ -321,7 +338,12 @@ class OMNIBOOKCore:
         self.pdf_exporter = PDFExporter()
     
     def generate_outline(self, config: BookConfig) -> List[Dict]:
-        prompt = f"""Create outline for "{config.title}" ({config.writing_style}, {config.chapters} chapters): {config.idea}"""
+        prompt = f"""Create outline for "{config.title}".
+Style: {config.writing_style}
+Language: {config.language}
+Template: {config.template}
+Chapters: {config.chapters}
+Book Description: {config.idea}"""
         
         response = self.llm.generate(prompt, 1000)
         chapters = []
@@ -341,11 +363,14 @@ class OMNIBOOKCore:
         return chapters
     
     def generate_chapter(self, chapter: Chapter, config: BookConfig, context: str) -> str:
+        target_words = max(600, int(config.pages * 250 / max(config.chapters, 1)))
         prompt = f"""Write Chapter {chapter.number}: "{chapter.title}" for "{config.title}".
 Style: {config.writing_style}
-Theme: {config.idea}
+Language: {config.language}
+Template: {config.template}
+Book Description: {config.idea}
 Context: {context}
-Write 800-1200 words professionally. Do not mention AI."""
+Write approximately {target_words} words. Do not mention AI."""
         
         content = self.llm.generate(prompt, 2000)
         content = self.processor.clean_text(content)
@@ -444,7 +469,7 @@ def show_form():
         with col1:
             title = st.text_input("Book Title *", placeholder="Enter title...")
             author = st.text_input("Author Name", value="Author")
-            language = st.selectbox("Language", ["English", "Arabic", "French", "Spanish", "German"])
+            language = st.selectbox("Language", LANGUAGES, index=0)
         
         with col2:
             pages = st.number_input("Pages", min_value=50, max_value=1000, value=250)
@@ -452,9 +477,8 @@ def show_form():
         
         idea = st.text_area("Book Idea *", placeholder="Describe your book idea in detail...", height=150)
         
-        style = st.select_slider("Writing Style", 
-            options=["Simple", "Academic", "Professional", "Creative", "Story-like", "Technical"],
-            value="Professional")
+        style = st.selectbox("Writing Style", STYLES, index=STYLES.index("Professional"))
+        template = st.selectbox("Book Template", TEMPLATES, index=0)
         
         submitted = st.form_submit_button("✨ Start Writing")
         
@@ -465,7 +489,7 @@ def show_form():
                 config = BookConfig(
                     title=title, idea=idea, language=language,
                     pages=int(pages), chapters=int(chapters),
-                    writing_style=style, author_name=author
+                    writing_style=style, template=template, author_name=author
                 )
                 st.session_state.config = config
                 st.session_state.generating = True
@@ -518,6 +542,11 @@ def show_result():
         - {len(book['chapters'])} chapters
         - ~{book['total_words'] // 250} pages
         """)
+        st.caption(
+            f"Language: {book['config'].get('language', 'English')} · "
+            f"Style: {book['config'].get('writing_style', 'Professional')} · "
+            f"Template: {book['config'].get('template', 'Standard Book')}"
+        )
         
         with st.expander("📚 Table of Contents"):
             for ch in book['chapters']:
