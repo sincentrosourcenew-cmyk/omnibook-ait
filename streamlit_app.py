@@ -31,6 +31,22 @@ from PIL import Image, ImageDraw, ImageFont
 BOOKS_DIR = Path("generated_books")
 BOOKS_DIR.mkdir(exist_ok=True)
 
+LANGUAGES = [
+    "English", "Arabic", "French", "Spanish", "German",
+    "Italian", "Portuguese", "Chinese", "Japanese", "Russian"
+]
+
+STYLES = [
+    "Academic", "Simple", "Professional", "Creative",
+    "Story-like", "Technical", "Persuasive", "Journalistic"
+]
+
+TEMPLATES = [
+    "Standard Book", "Novel", "Textbook", "Poetry Collection",
+    "Self-Help", "Biography", "Business", "Children's Book",
+    "Thriller", "Sci-Fi"
+]
+
 # Page Config - White Minimal Design
 st.set_page_config(
     page_title="OMNIBOOK AI",
@@ -91,6 +107,7 @@ class BookConfig:
     pages: int = 250
     chapters: int = 12
     writing_style: str = "Professional"
+    template: str = "Standard Book"
     author_name: str = "Author"
 
 @dataclass
@@ -444,7 +461,7 @@ def show_form():
         with col1:
             title = st.text_input("Book Title *", placeholder="Enter title...")
             author = st.text_input("Author Name", value="Author")
-            language = st.selectbox("Language", ["English", "Arabic", "French", "Spanish", "German"])
+            language = st.selectbox("Language", LANGUAGES, index=0)
         
         with col2:
             pages = st.number_input("Pages", min_value=50, max_value=1000, value=250)
@@ -452,9 +469,8 @@ def show_form():
         
         idea = st.text_area("Book Idea *", placeholder="Describe your book idea in detail...", height=150)
         
-        style = st.select_slider("Writing Style", 
-            options=["Simple", "Academic", "Professional", "Creative", "Story-like", "Technical"],
-            value="Professional")
+        style = st.select_slider("Writing Style", options=STYLES, value="Professional")
+        template = st.selectbox("Book Template", TEMPLATES, index=0)
         
         submitted = st.form_submit_button("✨ Start Writing")
         
@@ -465,7 +481,7 @@ def show_form():
                 config = BookConfig(
                     title=title, idea=idea, language=language,
                     pages=int(pages), chapters=int(chapters),
-                    writing_style=style, author_name=author
+                    writing_style=style, template=template, author_name=author
                 )
                 st.session_state.config = config
                 st.session_state.generating = True
