@@ -1,3 +1,11 @@
-streamlit==1.28.0
-Pillow==10.1.0
-reportlab==4.0.7
+# Core
+streamlit==1.28.1
+
+# Image Processing
+Pillow==10.0.1
+
+# PDF Generation
+reportlab==4.0.6
+
+# Utilities
+numpy==1.24.3
